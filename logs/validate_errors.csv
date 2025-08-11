@@ -1,0 +1,2 @@
+timestamp,row,column,value,message
+2025-08-11T16:15:25+09:00,3,phone,+821098765432,duplicate value violates uniqueness constraint

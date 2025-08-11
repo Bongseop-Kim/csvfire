@@ -1,0 +1,5 @@
+name,phone,birth,gender,token,proxy
+김철수,010-1234-5678,19900315,M,abc123token456,
+박영희,01098765432,19850720,2,def789token012,http://proxy.example.com:8080
+이민수,010 9876 5432,19951010,1,ghi345token678,
+최지영,010-5555-1234,20001205,F,, 

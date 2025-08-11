@@ -1,0 +1,63 @@
+version: 1
+columns:
+  - name: name
+    type: string
+    required: true
+    min_len: 1
+    max_len: 50
+    validators:
+      - regex: "^[가-힣a-zA-Z\\s]+$"
+        message: "이름은 한글, 영문, 공백만 허용됩니다"
+
+  - name: phone
+    type: string
+    required: true
+    preprocess:
+      - remove: ["-", " ", "\t"]
+        trim: true
+    validators:
+      - regex: "^[0-9]{10,11}$"
+        message: "휴대폰번호는 10~11자리 숫자여야 합니다"
+    transform:
+      - format_korean_phone_e164: true
+
+  - name: birth
+    type: date
+    required: true
+    format: "20060102"
+    validators:
+      - regex: "^[0-9]{8}$"
+        message: "생년월일은 YYYYMMDD 형식이어야 합니다"
+
+  - name: gender
+    type: string
+    required: true
+    enum: ["M", "F", "1", "2"]
+    normalize:
+      map:
+        "1": "M"
+        "2": "F"
+
+  - name: token
+    type: string
+    required: false
+    secret: true
+    min_len: 10
+    max_len: 100
+
+  - name: proxy
+    type: string
+    required: false
+    validators:
+      - regex: "^https?://.*$"
+        message: "프록시는 http:// 또는 https://로 시작해야 합니다"
+
+row_rules:
+  - name: age_range
+    expr: "age(birth) >= 0 && age(birth) <= 120"
+
+uniqueness:
+  - columns: ["phone"]
+
+null_policy:
+  treat_empty_as_null: true

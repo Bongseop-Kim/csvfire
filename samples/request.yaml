@@ -1,0 +1,19 @@
+method: POST
+url: "https://api.example.com/users"
+headers:
+  Content-Type: "application/json"
+  Authorization: "{{ if .token }}Bearer {{.token}}{{ end }}"
+  User-Agent: "csvfire/1.0"
+proxy: "{{ .proxy }}"
+body: |
+  {
+    "name": "{{ .name }}",
+    "phone": "{{ .phone }}",
+    "birth": "{{ .birth }}",
+    "gender": "{{ .gender }}",
+    "timestamp": "{{ dateFormat "2006-01-02T15:04:05Z" .birth }}"
+  }
+success:
+  status_in: [200, 201]
+  response_keys:
+    status: "success"
