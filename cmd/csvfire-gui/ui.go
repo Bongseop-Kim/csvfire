@@ -103,9 +103,6 @@ func (a *App) createCompactControlPanel() *fyne.Container {
 
 	// 파일 선택 섹션 (줄바꿈으로 깔끔하게)
 	
-	a.schemaEntry.SetPlaceHolder("스키마 파일 경로")
-	a.csvEntry.SetPlaceHolder("CSV 파일 경로")  
-	a.requestEntry.SetPlaceHolder("요청 설정 파일 경로")
 	
 	// 각 파일을 한 줄씩 배치하여 전체 너비 활용
 	schemaRow := container.NewBorder(nil, nil, 
