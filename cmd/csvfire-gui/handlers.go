@@ -47,9 +47,14 @@ func (a *App) updateState() {
 	a.state.RequestFile = a.requestEntry.Text
 	a.state.LogDir = a.logDirEntry.Text
 	a.state.ExportFailed = a.exportEntry.Text
-	
+	if a.resumeCheck != nil {
+		a.state.Resume = a.resumeCheck.Checked
+	}
+
 	if concurrency, err := strconv.Atoi(a.concurrencyEntry.Text); err == nil {
 		a.state.Concurrency = concurrency
+	} else {
+		a.state.Concurrency = 1
 	}
 	a.state.RateLimit = a.rateLimitEntry.Text
 	a.state.Timeout = a.timeoutEntry.Text
