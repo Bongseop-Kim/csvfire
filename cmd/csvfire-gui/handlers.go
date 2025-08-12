@@ -19,13 +19,26 @@ import (
 	"csvfire/internal/validator"
 )
 
+import (
+    …
+    "fyne.io/fyne/v2/dialog"
+    "fyne.io/fyne/v2/storage"
+    …
+)
+
 func (a *App) browseFile(title string, extensions []string, entry *widget.Entry) {
-	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
-		if err == nil && reader != nil {
-			entry.SetText(reader.URI().Path())
-			reader.Close()
-		}
-	}, a.window)
+    fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+        if err == nil && reader != nil {
+            entry.SetText(reader.URI().Path())
+            reader.Close()
+        }
+    }, a.window)
+    fd.SetTitle(title)
+    if len(extensions) > 0 {
+        fd.SetFilter(storage.NewExtensionFileFilter(extensions))
+    }
+    fd.SetConfirmText("선택")
+    fd.Show()
 }
 
 func (a *App) updateState() {
