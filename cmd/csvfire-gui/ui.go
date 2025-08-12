@@ -218,11 +218,12 @@ func (a *App) logMessage(message string) {
 	// Fyne 스레드 안전성을 위해 fyne.Do 사용
 	fyne.Do(func() {
 		currentText := a.logTextArea.Text
-		a.logTextArea.SetText(currentText + logLine)
+		newText := currentText + logLine
+		a.logTextArea.SetText(newText)
 		
 		// 자동 스크롤 (마지막 줄로)
-		if len(currentText) > 0 {
-			a.logTextArea.CursorRow = len(strings.Split(currentText, "\n"))
+		if len(newText) > 0 {
+			a.logTextArea.CursorRow = len(strings.Split(newText, "\n")) - 1
 		}
 	})
 }
