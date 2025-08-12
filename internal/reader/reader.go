@@ -200,3 +200,66 @@ func (r *CSVReader) GetPreviewRows(limit int) ([]map[string]string, error) {
 
 	return rows, nil
 } 
+
+// ValidateRowsStream reads CSV rows one by one and validates them without loading all into memory
+func (r *CSVReader) ValidateRowsStream(validator func(rowNum int, data map[string]string) (bool, []error)) (totalRows, validRows, errorCount int, err error) {
+	file, err := os.Open(r.filename)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to open CSV file: %w", err)
+	}
+	defer file.Close()
+
+	// Create CSV reader with buffering for better performance
+	bufferedReader := bufio.NewReader(file)
+	csvReader := csv.NewReader(bufferedReader)
+	
+	// Configure CSV reader
+	csvReader.FieldsPerRecord = len(r.schema.Columns)
+	csvReader.TrimLeadingSpace = true
+
+	// Read header row
+	headers, err := csvReader.Read()
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to read CSV header: %w", err)
+	}
+
+	// Validate headers match schema
+	expectedHeaders := r.schema.GetColumnNames()
+	if err := r.validateHeaders(headers, expectedHeaders); err != nil {
+		return 0, 0, 0, fmt.Errorf("header validation failed: %w", err)
+	}
+
+	// Read data rows one by one
+	rowNumber := 1 // Start from 1 (excluding header)
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return totalRows, validRows, errorCount, fmt.Errorf("failed to read CSV row %d: %w", rowNumber, err)
+		}
+
+		// Convert record to map
+		data := make(map[string]string)
+		for i, value := range record {
+			if i < len(headers) {
+				data[headers[i]] = value
+			}
+		}
+
+		// Validate the row
+		isValid, errors := validator(rowNumber, data)
+		totalRows++
+		
+		if isValid {
+			validRows++
+		} else {
+			errorCount += len(errors)
+		}
+
+		rowNumber++
+	}
+
+	return totalRows, validRows, errorCount, nil
+} 

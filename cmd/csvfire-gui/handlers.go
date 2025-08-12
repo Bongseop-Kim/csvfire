@@ -9,6 +9,7 @@ import (
 
 	fyne "fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 
 	"csvfire/internal/config"
@@ -19,13 +20,6 @@ import (
 	"csvfire/internal/validator"
 )
 
-import (
-    …
-    "fyne.io/fyne/v2/dialog"
-    "fyne.io/fyne/v2/storage"
-    …
-)
-
 func (a *App) browseFile(title string, extensions []string, entry *widget.Entry) {
     fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
         if err == nil && reader != nil {
@@ -33,7 +27,6 @@ func (a *App) browseFile(title string, extensions []string, entry *widget.Entry)
             reader.Close()
         }
     }, a.window)
-    fd.SetTitle(title)
     if len(extensions) > 0 {
         fd.SetFilter(storage.NewExtensionFileFilter(extensions))
     }
@@ -86,33 +79,54 @@ func (a *App) onValidate() {
 		// Create validator
 		val := validator.NewValidator(schema)
 		
-		// Read and validate
-		rows, err := csvReader.GetPreviewRows(1000000) // Large number to get all rows
+		// Read and validate using streaming approach
+		totalErrors := 0
+		loggedErrors := 0
+		totalRows, validRows, errorCount, err := csvReader.ValidateRowsStream(func(rowNum int, data map[string]string) (bool, []error) {
+			result := val.ValidateRow(rowNum, data)
+			
+			// Always count total errors
+			if !result.Valid {
+				totalErrors += len(result.Errors)
+				
+				// Log up to 5 errors total
+				remainingLogSlots := 5 - loggedErrors
+				if remainingLogSlots < 0 {
+					remainingLogSlots = 0
+				}
+				errorsToLog := len(result.Errors)
+				if errorsToLog > remainingLogSlots {
+					errorsToLog = remainingLogSlots
+				}
+				
+				for i := 0; i < errorsToLog; i++ {
+					err := result.Errors[i]
+					a.logMessage(fmt.Sprintf("행 %d, 컬럼 %s: %s", err.Row, err.Column, err.Message))
+					loggedErrors++
+				}
+			}
+			
+			var errors []error
+			if !result.Valid {
+				for _, validationErr := range result.Errors {
+					errors = append(errors, fmt.Errorf("%s", validationErr.Message))
+				}
+			}
+			
+			return result.Valid, errors
+		})
+		
 		if err != nil {
-			a.logMessage(fmt.Sprintf("CSV 읽기 실패: %v", err))
+			a.logMessage(fmt.Sprintf("CSV 읽기/검증 실패: %v", err))
 			a.setStatus("검증 실패")
 			return
 		}
 		
-		totalRows := len(rows)
-		validRows := 0
-		errorCount := 0
-		
-		for i, row := range rows {
-			result := val.ValidateRow(i+1, row)
-			if result.Valid {
-				validRows++
-			} else {
-				errorCount += len(result.Errors)
-				if errorCount <= 5 { // Show first 5 errors
-					for _, err := range result.Errors {
-						a.logMessage(fmt.Sprintf("행 %d, 컬럼 %s: %s", err.Row, err.Column, err.Message))
-					}
-				}
-			}
+		if loggedErrors < errorCount {
+			a.logMessage(fmt.Sprintf("검증 완료 - 총: %d, 유효: %d, 오류: %d (첫 %d개 오류만 표시됨)", totalRows, validRows, errorCount, loggedErrors))
+		} else {
+			a.logMessage(fmt.Sprintf("검증 완료 - 총: %d, 유효: %d, 오류: %d", totalRows, validRows, errorCount))
 		}
-		
-		a.logMessage(fmt.Sprintf("검증 완료 - 총: %d, 유효: %d, 오류: %d", totalRows, validRows, totalRows-validRows))
 		a.setStatus(fmt.Sprintf("검증 완료: %d/%d 성공", validRows, totalRows))
 	}()
 }
@@ -273,6 +287,7 @@ func (a *App) onRun() {
 		
 		// Create context
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel() // Ensure context is always canceled
 		a.state.mu.Lock()
 		a.state.Cancel = cancel
 		a.state.mu.Unlock()

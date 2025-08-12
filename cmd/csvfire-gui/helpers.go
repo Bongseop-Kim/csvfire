@@ -106,10 +106,29 @@ func (a *App) generateSchemaYAML() string {
 	yamlContent.WriteString("columns:\n")
 	
 	for _, column := range a.schemaData.Columns {
-		yamlContent.WriteString(fmt.Sprintf("  - name: %s\n", column.Name))
-		yamlContent.WriteString(fmt.Sprintf("    type: %s\n", column.Type))
+		yamlContent.WriteString(fmt.Sprintf("  - name: \"%s\"\n", column.Name))
+		yamlContent.WriteString(fmt.Sprintf("    type: \"%s\"\n", column.Type))
 		yamlContent.WriteString(fmt.Sprintf("    required: %t\n", column.Required))
 		
+		// Add optional MinLen field
+		if column.MinLen > 0 {
+			yamlContent.WriteString(fmt.Sprintf("    min_len: %d\n", column.MinLen))
+		}
+		
+		// Add optional MaxLen field
+		if column.MaxLen > 0 {
+			yamlContent.WriteString(fmt.Sprintf("    max_len: %d\n", column.MaxLen))
+		}
+		
+		// Add optional Enum field
+		if len(column.Enum) > 0 {
+			yamlContent.WriteString("    enum:\n")
+			for _, enumVal := range column.Enum {
+				yamlContent.WriteString(fmt.Sprintf("      - \"%s\"\n", enumVal))
+			}
+		}
+		
+		// Add validators section if regex is present
 		if column.Regex != "" {
 			yamlContent.WriteString("    validators:\n")
 			yamlContent.WriteString(fmt.Sprintf("      - regex: \"%s\"\n", column.Regex))
