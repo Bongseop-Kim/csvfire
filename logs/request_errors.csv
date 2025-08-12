@@ -1,0 +1,5 @@
+ts,row,request_id,error_category,error_detail,status_code
+2025-08-11T17:02:15+09:00,3,req_3_1683039325271092906,validation_error,Row validation failed,0
+2025-08-11T17:02:21+09:00,1,req_1_9185410712958286334,dns_error,"Post ""https://api.example.com/users"": dial tcp: lookup api.example.com: no such host",0
+2025-08-11T17:02:22+09:00,2,req_2_4156386645414320411,dns_error,"Post ""https://api.example.com/users"": proxyconnect tcp: dial tcp: lookup proxy.example.com: no such host",0
+2025-08-11T17:02:24+09:00,4,req_4_4592882207915756472,dns_error,"Post ""https://api.example.com/users"": dial tcp: lookup api.example.com: no such host",0
