@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	fyne "fyne.io/fyne/v2"
@@ -106,8 +107,8 @@ func (a *App) generateSchemaYAML() string {
 	yamlContent.WriteString("columns:\n")
 	
 	for _, column := range a.schemaData.Columns {
-		yamlContent.WriteString(fmt.Sprintf("  - name: \"%s\"\n", column.Name))
-		yamlContent.WriteString(fmt.Sprintf("    type: \"%s\"\n", column.Type))
+		yamlContent.WriteString(fmt.Sprintf("  - name: %s\n", strconv.Quote(column.Name)))
+		yamlContent.WriteString(fmt.Sprintf("    type: %s\n", strconv.Quote(column.Type)))
 		yamlContent.WriteString(fmt.Sprintf("    required: %t\n", column.Required))
 		
 		// Add optional MinLen field
@@ -124,7 +125,7 @@ func (a *App) generateSchemaYAML() string {
 		if len(column.Enum) > 0 {
 			yamlContent.WriteString("    enum:\n")
 			for _, enumVal := range column.Enum {
-				yamlContent.WriteString(fmt.Sprintf("      - \"%s\"\n", enumVal))
+				yamlContent.WriteString(fmt.Sprintf("      - %s\n", strconv.Quote(enumVal)))
 			}
 		}
 		

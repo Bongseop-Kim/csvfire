@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"csvfire/internal/config"
 	"csvfire/internal/runner"
@@ -39,8 +40,8 @@ func (r *CSVReader) ReadRows(tasksChan chan<- runner.RowTask) error {
 	bufferedReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(bufferedReader)
 	
-	// Configure CSV reader
-	csvReader.FieldsPerRecord = len(r.schema.Columns)
+	// Configure CSV reader for header reading
+	csvReader.FieldsPerRecord = -1 // Allow variable field count for header
 	csvReader.TrimLeadingSpace = true
 
 	// Read header row
@@ -49,11 +50,19 @@ func (r *CSVReader) ReadRows(tasksChan chan<- runner.RowTask) error {
 		return fmt.Errorf("failed to read CSV header: %w", err)
 	}
 
+	// Trim UTF-8 BOM from first header if present
+	if len(headers) > 0 && len(headers[0]) > 0 {
+		headers[0] = strings.TrimPrefix(headers[0], "\ufeff")
+	}
+
 	// Validate headers match schema
 	expectedHeaders := r.schema.GetColumnNames()
 	if err := r.validateHeaders(headers, expectedHeaders); err != nil {
 		return fmt.Errorf("header validation failed: %w", err)
 	}
+
+	// Configure CSV reader for strict field count validation
+	csvReader.FieldsPerRecord = len(r.schema.Columns)
 
 	// Read data rows
 	rowNumber := 1 // Start from 1 (excluding header)
@@ -165,7 +174,7 @@ func (r *CSVReader) GetPreviewRows(limit int) ([]map[string]string, error) {
 
 	bufferedReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(bufferedReader)
-	csvReader.FieldsPerRecord = len(r.schema.Columns)
+	csvReader.FieldsPerRecord = -1 // Allow variable field count for header
 	csvReader.TrimLeadingSpace = true
 
 	// Read header row
@@ -173,6 +182,20 @@ func (r *CSVReader) GetPreviewRows(limit int) ([]map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CSV header: %w", err)
 	}
+
+	// Trim UTF-8 BOM from first header if present
+	if len(headers) > 0 && len(headers[0]) > 0 {
+		headers[0] = strings.TrimPrefix(headers[0], "\ufeff")
+	}
+
+	// Validate headers match schema
+	expectedHeaders := r.schema.GetColumnNames()
+	if err := r.validateHeaders(headers, expectedHeaders); err != nil {
+		return nil, fmt.Errorf("header validation failed: %w", err)
+	}
+
+	// Configure CSV reader for strict field count validation
+	csvReader.FieldsPerRecord = len(r.schema.Columns)
 
 	var rows []map[string]string
 	count := 0
@@ -213,8 +236,8 @@ func (r *CSVReader) ValidateRowsStream(validator func(rowNum int, data map[strin
 	bufferedReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(bufferedReader)
 	
-	// Configure CSV reader
-	csvReader.FieldsPerRecord = len(r.schema.Columns)
+	// Configure CSV reader for header reading
+	csvReader.FieldsPerRecord = -1 // Allow variable field count for header
 	csvReader.TrimLeadingSpace = true
 
 	// Read header row
@@ -223,11 +246,19 @@ func (r *CSVReader) ValidateRowsStream(validator func(rowNum int, data map[strin
 		return 0, 0, 0, fmt.Errorf("failed to read CSV header: %w", err)
 	}
 
+	// Trim UTF-8 BOM from first header if present
+	if len(headers) > 0 && len(headers[0]) > 0 {
+		headers[0] = strings.TrimPrefix(headers[0], "\ufeff")
+	}
+
 	// Validate headers match schema
 	expectedHeaders := r.schema.GetColumnNames()
 	if err := r.validateHeaders(headers, expectedHeaders); err != nil {
 		return 0, 0, 0, fmt.Errorf("header validation failed: %w", err)
 	}
+
+	// Configure CSV reader for strict field count validation
+	csvReader.FieldsPerRecord = len(r.schema.Columns)
 
 	// Read data rows one by one
 	rowNumber := 1 // Start from 1 (excluding header)
